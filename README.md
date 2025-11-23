@@ -18,66 +18,39 @@
 ```mermaid
 flowchart LR
 
-%% ======================
-%% User / Frontend
-%% ======================
 subgraph "Frontend (Next.js)"
-    UI[ユーザー UI<br>画像アップロード / 類似ユーザー一覧]
+    UI[ユーザー UI\n画像アップロード / 類似ユーザー一覧]
 end
 
-%% ======================
-%% Backend API (Go)
-%% ======================
 subgraph "API Layer (Go)"
-    AUTH[Auth Handler<br>(JWT/OAuth)]
-    API[API Gateway<br>(HTTP / gRPC)]
-    MATCH[Matcher Service<br>(類似度計算・検索)]
+    AUTH["Auth Handler\n(JWT/OAuth)"]
+    API["API Gateway\n(HTTP / gRPC)"]
+    MATCH["Matcher Service\n(類似度計算・検索)"]
 end
 
-%% ======================
-%% Embedding Server (Python)
-%% ======================
 subgraph "Embedding Layer (Python)"
-    PY[Face Embedding Server<br>(Face Detection/Alignment/Embedding)]
+    PY["Face Embedding Server\n(Face Detection/Alignment/Embedding)"]
 end
 
-%% ======================
-%% Database
-%% ======================
 subgraph "Database Layer"
     DB[(PostgreSQL + pgvector)]
 end
 
-%% ======================
-%% External API
-%% ======================
 subgraph "External Services"
-    GCP[Google Cloud Vision API<br>(※検討中: 顔検出)]
+    GCP["Google Cloud Vision API\n(検討中)"]
 end
 
-%% ======================
-%% Frontend → Backend
-%% ======================
 UI -->|画像アップロード| AUTH
 AUTH -->|JWT検証| API
 API -->|画像データ送信 (gRPC)| PY
 
-%% ======================
-%% Python Embedding Server
-%% ======================
-PY -->|Embedding生成(512次元)| API
+PY -->|Embedding生成| API
 
-%% ======================
-%% Go側：類似度マッチング
-%% ======================
 API -->|Embedding受取| MATCH
 MATCH -->|pgvector検索| DB
 MATCH -->|類似ユーザー結果| API
 API -->|レスポンス返却| UI
 
-%% ======================
-%% Optional: Vision API
-%% ======================
 PY -->|顔検出API呼び出し| GCP
 ```
 
