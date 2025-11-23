@@ -18,28 +18,34 @@
 ```mermaid
 flowchart LR
 
+%% Frontend
 subgraph "Frontend (Next.js)"
-    UI[ユーザー UI\n画像アップロード / 類似ユーザー一覧]
+    UI["ユーザー UI\n画像アップロード / 類似ユーザー一覧"]
 end
 
+%% Backend
 subgraph "API Layer (Go)"
     AUTH["Auth Handler\n(JWT/OAuth)"]
     API["API Gateway\n(HTTP / gRPC)"]
     MATCH["Matcher Service\n(類似度計算・検索)"]
 end
 
+%% Embedding Server
 subgraph "Embedding Layer (Python)"
     PY["Face Embedding Server\n(Face Detection/Alignment/Embedding)"]
 end
 
+%% Database
 subgraph "Database Layer"
     DB[(PostgreSQL + pgvector)]
 end
 
+%% External
 subgraph "External Services"
     GCP["Google Cloud Vision API\n(検討中)"]
 end
 
+%% フロー
 UI -->|画像アップロード| AUTH
 AUTH -->|JWT検証| API
 API -->|画像データ送信 (gRPC)| PY
