@@ -14,24 +14,100 @@
 - 類似度スコアの表示
 - 類似ユーザーとのチャット(WebSocket)
 
-
 # 2. 全体図
 ```bash
-[Frontend (Next.js + TS)] <--- HTTPS / WebSocket ---> [API Gateway / Go Backend]
-                                                        ^
-                                                        |
-                                                        | gRPC
-                                                        v
-                                                        [Face Service (Python)]
-                                                        |
-                                                        v
-                                                        [Postgres + pgvector]
+flowchart LR
+
+%% ======================
+%% User / Frontend
+%% ======================
+subgraph "Frontend (Next.js)"
+    UI[ユーザー UI<br>画像アップロード / 類似ユーザー一覧]
+end
+
+%% ======================
+%% Backend API (Go)
+%% ======================
+subgraph "API Layer (Go)"
+    AUTH[Auth Handler<br>(JWT/OAuth)]
+    API[API Gateway<br>(HTTP / gRPC)]
+    MATCH[Matcher Service<br>(類似度計算・検索)]
+end
+
+%% ======================
+%% Embedding Server (Python)
+%% ======================
+subgraph "Embedding Layer (Python)"
+    PY[Face Embedding Server<br>(Face Detection/Alignment/Embedding)]
+end
+
+%% ======================
+%% Database
+%% ======================
+subgraph "Database Layer"
+    DB[(PostgreSQL + pgvector)]
+end
+
+%% ======================
+%% External API
+%% ======================
+subgraph "External Services"
+    GCP[Google Cloud Vision API<br>(※検討中: 顔検出)]
+end
+
+%% ======================
+%% Frontend → Backend
+%% ======================
+UI -->|画像アップロード| AUTH
+AUTH -->|JWT検証| API
+API -->|画像データ送信 (gRPC)| PY
+
+%% ======================
+%% Python Embedding Server
+%% ======================
+PY -->|Embedding生成(512次元)| API
+
+%% ======================
+%% Go側：類似度マッチング
+%% ======================
+API -->|Embedding受取| MATCH
+MATCH -->|pgvector検索| DB
+MATCH -->|類似ユーザー結果| API
+API -->|レスポンス返却| UI
+
+%% ======================
+%% Optional: Vision API
+%% ======================
+PY -->|顔検出API呼び出し| GCP
 ```
 
 # 2-add. アーキテクチャ詳細 (クリーンアーキテクチャ & DDD の採用)
 
+# 3. 処理の流れ
 
-# 3. フロントエンド仕様 (Next.js+TypeScript)
+## ① Frontend → Go API
+Next.jsから画像をアップロードする
+
+## ② Go → Python (gRPC)
+画像をGo APIからPythonサーバへ送る。
+Pythonは以下のものを担当する。
+- 顔検出（Vision API）
+- 顔前処理 (アライメント)
+- 512次元 embedding 抽出
+
+## ③ Python → Go (gRPC)
+PythonからembeddingをGoに返す。
+
+## ④ 類似度検索をGoが行う。
+- embedding を受け取り
+- pgvector で類似検索
+- コサイン類似度でスコア算出する
+- 類似ユーザー一覧を返却する
+
+## ⑤ Go → Frontend
+結果 (似ているユーザー)を返す。
+
+# 4. フロントエンド仕様 (Next.js+TypeScript)
 ## 主要ページ
 - /singup, /login
 - /profile：プロフィール編集 (名前、写真、公開範囲)
@@ -43,13 +119,14 @@
 
 ## TypeScriptを採用する理由
 
-# 4. バックエンド仕様 (Go)
+# 5. バックエンド仕様 (Go)
 
-# 5. 顔認証/顔類似性サービス (Python)
+# 6. 顔認証/顔類似性サービス (Python)
 
-# 6. API仕様書 (REST for frontend, gRPC for service間)
+# 7. API仕様書 (REST for frontend, gRPC for service間)
 
-# 7. DBデータモデル
+# 8. DBデータモデル
+
 
 
 
