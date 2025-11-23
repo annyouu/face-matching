@@ -20,15 +20,44 @@ flowchart LR
 
 %% Frontend
 subgraph FE["Frontend (Next.js)"]
-    UI["ユーザー UI\n画像アップロード / 類似ユーザー一覧"]
+    UI["ユーザー UI 画像アップロード / 類似ユーザー一覧"]
 end
 
 %% Backend
 subgraph API_Layer["API Layer (Go)"]
-    AUTH["Auth Handler\n(JWT/OAuth)"]
-    API["API Gateway\n(HTTP / gRPC)"]
-    MATCH["Matcher Service\n(類似度計算・検索)"]
+    AUTH["Auth Handler (JWT/OAuth)"]
+    API["API Gateway (HTTP / gRPC)"]
+    MATCH["Matcher Service (類似度計算・検索)"]
 end
+
+%% Embedding Server
+subgraph PY_Layer["Embedding Layer (Python)"]
+    PY["Face Embedding Server (Face Detection/Alignment/Embedding)"]
+end
+
+%% Database
+subgraph DB_Layer["Database Layer"]
+    DB[(PostgreSQL + pgvector)]
+end
+
+%% External
+subgraph EXT["External Services"]
+    GCP["Google Cloud Vision API (検討中)"]
+end
+
+%% フロー
+UI -->|画像アップロード| AUTH
+AUTH -->|JWT検証| API
+API -->|画像データ送信 (gRPC)| PY
+
+PY -->|Embedding生成| API
+
+API -->|Embedding受取| MATCH
+MATCH -->|pgvector検索| DB
+MATCH -->|類似ユーザー結果| API
+API -->|レスポンス返却| UI
+
+PY -->|顔検出API呼び出し| GCP
 
 ```
 
