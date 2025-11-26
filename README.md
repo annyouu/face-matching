@@ -65,10 +65,13 @@ UPLOAD -->|レスポンス返却| UI
 PY -->|顔検出 API 呼び出し| GCP
 ```
 
+# 3. ディレクトリ構成
+```
+```
+
 <!-- websocketによるチャット機能をfrontendのflowchart LR追加する -->
 
-# 2-add①. 処理の流れ
-
+# 4. 処理の流れ
 ### ① Frontend → Go API
 Next.jsから画像をアップロードする
 
@@ -91,9 +94,10 @@ PythonからembeddingをGoに返す。
 ### ⑤ Go → Frontend
 結果 (似ているユーザー)を返す。
 
-# 2-add②. アーキテクチャ詳細 (クリーンアーキテクチャ & DDD の採用)
+# 5. アーキテクチャ詳細 (クリーンアーキテクチャ & DDD の採用)
 
-# 3. フロントエンド仕様 (Next.js+TypeScript)
+
+# 6. フロントエンド仕様 (Next.js+TypeScript)
 ## 主要ページ
 - /singup, /login
 - /profile：プロフィール編集 (名前、写真、公開範囲)
@@ -105,14 +109,17 @@ PythonからembeddingをGoに返す。
 
 ## TypeScriptを採用する理由
 
-# 4. バックエンド仕様 (Go)
+# 7. バックエンド仕様 (Go)
 ## GolangとPythonの比較
 
-# 5. 顔認証/顔類似性サービス (Python)
+<!-- あとで詳細図で別に飛ばす -->
+# 8. 顔認証/顔類似性サービス (Python)
 
-# 6. API仕様書 (REST for frontend, gRPC for service間)
+<!-- あとで詳細図で別に飛ばす -->
+# 9. API仕様書 (REST for frontend, gRPC for service間)
 
-# 7. DBデータモデル
+<!-- あとで詳細図で別に飛ばす -->
+# 10. DBデータモデル
 
 
 
