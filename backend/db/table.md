@@ -44,18 +44,18 @@ erDiagram
         text content "メッセージ本文"
     }
 
-    % 1. USERS との 1対多/多対1 の関係
+    %% 1. USERS との 1対多/多対1 の関係
     USERS ||--o{ FACES : "has"
     USERS ||--o{ DAILY_LIMITS : "manages"
     
-    % 2. 多対多を実現する LIKES (中間テーブル) との関係
+    %% 2. 多対多を実現する LIKES (中間テーブル) との関係
     USERS ||--o{ LIKES : "sends"
     USERS ||--o{ LIKES : "receives"
     
-    % 3. チャット構造
+    %% 3. チャット構造
     CONVERSATIONS ||--o{ MESSAGES : "contains"
     
-    % 4. CONVERSATIONS と USERS の関係 (会話への参加)
+    %% 4. CONVERSATIONS と USERS の関係 (会話への参加)
     USERS ||--o{ CONVERSATIONS : "user A"
     USERS ||--o{ CONVERSATIONS : "user B"
 ```
