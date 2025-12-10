@@ -1,22 +1,6 @@
 <!-- ER図について考える -->
 
-# 🚀 Destiny Face Backend (Go Microservice)
-
-## 概要
-
-本プロジェクトは、顔認証技術（Python/gRPC）とGo言語の高性能なバックエンドを組み合わせた、新しいコンセプトのマッチングプラットフォーム「Destiny Face」のバックエンドリポジトリです。クリーンアーキテクチャ（CA）とDDDの原則に従って設計されています。
-
-## 🛠️ 技術スタック
-
-* **言語:** Go 1.21+
-* **Webフレームワーク:** Echo / Gin (Controller層)
-* **データベース:** PostgreSQL + pgvector (ベクトル検索)
-* **マイクロサービス通信:** gRPC (Go ⇔ Python)
-* **リアルタイム通信:** WebSocket (チャット機能)
-
----
-
-## 💾 データベース設計 (PostgreSQL + pgvector)
+## データベース設計 (PostgreSQL + pgvector) (ベクトル検索)
 
 アプリケーションのコアとなる6つのテーブルと、そのリレーションを示します。
 
@@ -24,11 +8,55 @@
 
 多対多の関係（Likes）と、チャット機能の構造（Conversations, Messages）が核となります。
 
+```mermaid
+erDiagram
+    USERS {
+        uuid id PK
+        string name
+        string email
+        string password_hash
+    }
+    FACES {
+        uuid id PK
+        uuid user_id FK "誰の顔か"
+        vector embedding "顔特徴量"
+    }
+    LIKES {
+        uuid id PK
+        uuid sender_id FK "メッセージを送った人"
+        uuid receiver_id FK "メッセージを送られた人"
+        text message_content
+    }
+    DAILY_LIMITS {
+        uuid user_id FK, PK
+        date date PK "日付ごとの制限"
+        int count "送信済み人数"
+    }
+    CONVERSATIONS {
+        uuid id PK
+        uuid user_a_id FK
+        uuid user_b_id FK
+    }
+    MESSAGES {
+        uuid id PK
+        uuid conversation_id FK "どの会話に属するか"
+        uuid sender_id FK "送信者"
+        text content "メッセージ本文"
+    }
 
+    USERS ||--o{ FACES : "has (1対多)"
+    USERS ||--o{ LIKES : "sends/receives (多対多)"
+    USERS ||--o{ DAILY_LIMITS : "managed by (1対多)"
+    CONVERSATIONS ||--o{ MESSAGES : "contains (1対多)"
+    
+    % USERS と CONVERSATIONS の関係 (多対多を Likes/Conversationsで実現)
+    USERS ||--o{ CONVERSATIONS : "participates (多対多)"
+    LIKES }o--o{ CONVERSATIONS : "initiates (1対1 or 1対多)"
+```
 
 ### 2. テーブル構成と役割
 
-| # | テーブル名 | 主な役割 | リレーションの性質 | 特記事項 |
+|   | テーブル名 | 主な役割 | リレーションの性質 | 特記事項 |
 | :--- | :--- | :--- | :--- | :--- |
 | **1** | **Users** | ユーザーの基本情報を管理する | 1対多 | 特になし |
 | **2** | **Faces** | **顔特徴量 (VECTOR(512))** を保存。ユーザーデータから顔データを分離（正規化）を意識。 | 多対1 (Users) | pgvector使用 |
