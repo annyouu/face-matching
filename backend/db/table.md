@@ -6,8 +6,6 @@
 
 ### 1. ER図 (実体関連図)
 
-多対多の関係（Likes）と、チャット機能の構造（Conversations, Messages）が核となります。
-
 ```mermaid
 erDiagram
     USERS {
