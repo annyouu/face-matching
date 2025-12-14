@@ -9,6 +9,7 @@ import (
 	
 	"destinyface/internal/domain/entity"
 	"destinyface/internal/domain/repository"
+	"destinyface/internal/domain"
 )
 
 // DBへの実際の処理を記述
@@ -82,7 +83,7 @@ func (r *usersRepositoryImpl) FindByID(ctx context.Context, id string) (*entity.
 	// エラーチェックを行う
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repository.ErrNotFound
+			return nil, domain.ErrNotFound
 		}
 		return nil, fmt.Errorf("userが見つかりませんでした: %w", err)
 	}
@@ -111,6 +112,7 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 		user.ID,
 		user.Email,
 		user.PasswordHash,
+		user.Name,
 		user.UpdatedAt,
 	)
 
@@ -119,10 +121,13 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 	}
 
 	// ResultからRowsAffected()を取得し、更新された行数を取得
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affectedの取得に失敗: %w", err)
+	}
 
 	if rowsAffected == 0 {
-		return repository.ErrNotFound
+		return domain.ErrNotFound
 	}
 	
 	return nil
@@ -141,10 +146,13 @@ func (r *usersRepositoryImpl) Delete(ctx context.Context, id string) error {
 	}
 
 	// ResultからRowsAffected()を取得し、削除された行数が0の場合、repository.ErrNotFound に変換して返す
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affectedの取得に失敗: %w", err)
+	}
 
 	if rowsAffected == 0 {
-		return repository.ErrNotFound
+		return domain.ErrNotFound
 	}
 	
 	return nil
