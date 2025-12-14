@@ -17,7 +17,7 @@ type usersRepositoryImpl struct {
 	db *sql.DB
 }
 
-func NewUserRepository(db *sql.DB) repository.UserRepository {
+func NewUserRepository(db *sql.DB) repository.UserRepositoryInterface {
 	return &usersRepositoryImpl{
 		db: db,
 	}
