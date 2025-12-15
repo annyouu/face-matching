@@ -9,7 +9,7 @@ import (
 	
 	"destinyface/internal/domain/entity"
 	"destinyface/internal/domain/repository"
-	"destinyface/internal/domain"
+	"destinyface/internal/domain/errors"
 )
 
 // DBへの実際の処理を記述

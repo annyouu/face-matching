@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"destinyface/internal/domain"
+	"destinyface/internal/domain/errors"
 	"destinyface/internal/domain/entity"
 	"destinyface/internal/domain/repository"
 	"destinyface/internal/usecase/dto"
