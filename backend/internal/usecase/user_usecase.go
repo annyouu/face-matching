@@ -121,16 +121,65 @@ func (u *UserUseCase) Login(ctx context.Context, input *dto.UserLoginInput) (*dt
 }
 
 // プロフィール取得
-func (u *UserUseCase) GetProfile() {
+func (u *UserUseCase) GetProfile(ctx context.Context, userID string) (*dto.UserOutput, error) {
 	// ユーザーのIDの形式チェック
+	if userID == "" {
+		return nil, domain.ErrInvalidInput
+	}
 
 	// リポジトリからユーザー取得
+	user, err := u.userRepo.FindByID(ctx, userID)
 
-	// 
+	// 500
+	if err != nil {
+		return nil, fmt.Errorf("userRepoのFindByIDは失敗しました: %w", err)
+	}
+
+	// DTOにして返す
+	return &dto.UserOutput{
+		ID: user.ID,
+		Name: user.Name,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+	}, nil
 }
 
 // プロフィール更新
-func (u *UserUseCase) UpdateProfile() {
+func (u *UserUseCase) UpdateProfile(ctx context.Context, userID string, input *dto.UserUpdateInput) (*dto.UserOutput, error) {
+	// バリデーションチェック
+	if err := u.validator.Struct(input); err != nil {
+		return nil, domain.ErrInvalidInput
+	}
+
+	// 更新対象のユーザーがいるかどうか確認
+	user, err := u.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("userRepoのFindByIDは失敗しました: %w", err)
+	}
+
+	// エンティティの値を更新する
+	// 入力があった項目のみ更新する
+	if input.Name != "" {
+		user.Name = input.Name
+	}
+
+	// if input.ProfileImageURL != "" {
+	// 	user.ProfileImageURL = input.ProfileImageURL
+	// }
 	
+	user.UpdatedAt = time.Now()
+
+	// リポジトリで更新
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("userRepo.Updateに失敗しました: %w", err)
+	}
+
+	// 更新後の情報を返す
+	return &dto.UserOutput{
+		ID: user.ID,
+		Name: user.Name,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+	}, nil
 }
 
