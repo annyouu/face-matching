@@ -32,6 +32,7 @@ type UserOutput struct {
 	ID string  `json:"id"`
 	Name string  `json:"name"`
 	Email string  `json:"email"`
+	ProfileImageURL string `json:"profile_image_url"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
