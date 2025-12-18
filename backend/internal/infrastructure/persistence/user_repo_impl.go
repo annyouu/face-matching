@@ -3,13 +3,13 @@ package persistence
 import (
 	"context"
 	"database/sql"
-	"errors"
+	stdErrors "errors"
 	"fmt"
 	"time"
 	
 	"destinyface/internal/domain/entity"
 	"destinyface/internal/domain/repository"
-	"destinyface/internal/domain/errors"
+	appErrors "destinyface/internal/errors"
 )
 
 // DBへの実際の処理を記述
@@ -82,8 +82,8 @@ func (r *usersRepositoryImpl) FindByID(ctx context.Context, id string) (*entity.
 
 	// エラーチェックを行う
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotFound
+		if stdErrors.Is(err, sql.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
 		}
 		return nil, fmt.Errorf("userが見つかりませんでした: %w", err)
 	}
@@ -118,8 +118,8 @@ func (r *usersRepositoryImpl) FindByEmail(ctx context.Context, email string) (*e
 
 	// エラーチェックを行う
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-            return nil, domain.ErrNotFound 
+		if stdErrors.Is(err, sql.ErrNoRows) {
+            return nil, appErrors.ErrNotFound 
         }
 		return nil, fmt.Errorf("userのemail検索に失敗しました: %w", err)
 	}
@@ -162,7 +162,7 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 	}
 
 	if rowsAffected == 0 {
-		return domain.ErrNotFound
+		return appErrors.ErrNotFound
 	}
 	
 	return nil
@@ -187,7 +187,7 @@ func (r *usersRepositoryImpl) Delete(ctx context.Context, id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return domain.ErrNotFound
+		return appErrors.ErrNotFound
 	}
 	
 	return nil
