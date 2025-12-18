@@ -1,7 +1,7 @@
 package controller
 
 import (
-	stdErrors "errors"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +20,20 @@ func NewUserHandler(u usecase.UserUseCaseInterface) *UserHandler {
 	}
 }
 
+func respondError(c *gin.Context, err error) {
+    switch {
+    case errors.Is(err, appErrors.ErrNotFound):
+        c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+    case errors.Is(err, appErrors.ErrEmailAlreadyExists):
+        c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+    case errors.Is(err, appErrors.ErrInvalidCredentials):
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+    default:
+        // 内部ログ出力を推奨
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+    }
+}
+
 // POST
 func (h *UserHandler) Register(c *gin.Context) {
 	var input dto.UserRegisterInput
@@ -33,20 +47,10 @@ func (h *UserHandler) Register(c *gin.Context) {
 	
 	output, err := h.userUseCase.Register(c.Request.Context(), &input)
 	if err != nil {
-		if stdErrors.Is(err, appErrors.ErrEmailAlreadyExists) {
-			c.JSON(http.StatusConflict, gin.H{
-				"error": "Email already registered",
-			})
-			return
-		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Internal server error",
-		})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, output)
-
 }
 
 // POST
@@ -61,15 +65,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	tokenOutput, err := h.userUseCase.Login(c.Request.Context(), &input)
 	if err != nil {
-		if stdErrors.Is(err, appErrors.ErrEmailAlreadyExists) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid email or password",
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Internal server error",
-		})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, tokenOutput)
@@ -89,15 +85,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 
 	output, err := h.userUseCase.GetProfile(c.Request.Context(), userID)
 	if err != nil {
-		if stdErrors.Is(err, appErrors.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "User not found",
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Internal server error",
-		})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, output)
@@ -124,15 +112,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	output, err := h.userUseCase.UpdateProfile(c.Request.Context(), userID, &input)
 	if err != nil {
-		if stdErrors.Is(err, appErrors.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "User not found",
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Internal server error",
-		})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, output)
