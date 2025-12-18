@@ -45,7 +45,6 @@ func (h *UserHandler) Register(c *gin.Context) {
 		})
 		return
 	}
-	// 201
 	c.JSON(http.StatusCreated, output)
 
 }
@@ -73,7 +72,6 @@ func (h *UserHandler) Login(c *gin.Context) {
 		})
 		return
 	}
-	// 201
 	c.JSON(http.StatusOK, tokenOutput)
 }
 
@@ -102,11 +100,40 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		})
 		return
 	}
-	// 201
 	c.JSON(http.StatusOK, output)
 }
 
 // PATCH
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	userID := c.GetString("userID")
 
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	var input dto.UserUpdateInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+		})
+		return
+	}
+
+	output, err := h.userUseCase.UpdateProfile(c.Request.Context(), userID, &input)
+	if err != nil {
+		if stdErrors.Is(err, appErrors.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "User not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Internal server error",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, output)
 }
