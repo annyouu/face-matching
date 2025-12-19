@@ -29,7 +29,6 @@ func respondError(c *gin.Context, err error) {
     case errors.Is(err, appErrors.ErrInvalidCredentials):
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
     default:
-        // 内部ログ出力を推奨
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
     }
 }
@@ -50,7 +49,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		respondError(c, err)
 		return
 	}
-	
+
 	c.JSON(http.StatusCreated, output)
 }
 
