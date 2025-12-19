@@ -34,7 +34,7 @@ jobs:
 
       - name: Gemini AI Review
         if: steps.diff.outputs.has_diff == 'true'
-        uses: m-p-p-p/gemini-review-action@v1
+        uses: google-gemini/gemini-github-action@v1
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           model: "gemini-2.0-flash"
