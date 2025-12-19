@@ -1,0 +1,30 @@
+name: Go Build Check
+
+# いつ実行するか
+on:
+  push:
+    branches: [ "main" ] # mainブランチにpushされたとき
+  pull_request:
+    branches: [ "main" ] # mainブランチ向けのPRが作られたとき
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # GitHubが貸してくれるLinuxマシン
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4 # 自分のコードをマシンにコピーする
+
+    - name: Set up Go
+      uses: actions/setup-go@v5 # Goをインストールする
+      with:
+        go-version: '1.23' # 使っているGoのバージョンに合わせてください
+
+    - name: Install dependencies
+      run: go mod download # ライブラリをダウンロードする
+
+    - name: Build
+      run: go build -v ./... # プロジェクト全体をビルドする
+
+    - name: Test
+      run: go test -v ./... # ついでにテストも実行する
