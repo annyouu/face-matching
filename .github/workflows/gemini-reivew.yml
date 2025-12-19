@@ -1,0 +1,71 @@
+name: Gemini PR Reviewer
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'backend/**' # backendフォルダ内に変更があった時だけ起動
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR Diff
+        id: diff
+        run: |
+          # backendフォルダ内の差分だけを抽出してファイルに保存
+          git diff origin/${{ github.base_ref }}...HEAD -- 'backend/' > pr_diff.txt
+          
+          # 差分があるかチェック
+          if [ -s pr_diff.txt ]; then
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Gemini AI Review
+        if: steps.diff.outputs.has_diff == 'true'
+        uses: m-p-p-p/gemini-review-action@v1
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          model: "gemini-2.0-flash"
+          # どこにコメントするか
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            あなたは世界最高峰の Go エンジニア兼セキュリティ監査官です。
+            開発中のマッチングアプリ「Destiny Face」の backend コードをレビューしてください。
+
+            ## レビューの基本方針
+            1. **不変性と安全性**: SQLインジェクション、機密情報のログ出力、不適切なポインタ操作がないか。
+            2. **クリーンアーキテクチャ**: 例：Repository パターンが守られ、ビジネスロジックが DB の詳細（sql.DB など）に依存していないか。
+            3. **Go の作法**: `if err != nil` の適切な処理、`errors.Is/As` によるエラーラッピング、Context の伝播、適切な命名。
+            4. **パフォーマンス**: 不要なメモリ割り当て、N+1 クエリ、DB 接続のリーク（rows.Close忘れ等）。
+
+            ## 出力フォーマット
+            各指摘事項は以下の形式で書いてください。
+            ### 🚩 [重要度: 高/中/低] 指摘のタイトル
+            - **問題点**: なぜこのコードが良くないのか
+            - **改善案**: どう書き換えるべきか
+            - **修正例**:
+              ```go
+              // 改善後のコードをここに記載
+              ```
+
+            ## 重点チェックリスト（これを必ず確認してください）
+            - 関数は「インターフェースを受け取り、構造体を返す」原則に従っているか？
+            - タイムアウト制御のために `context.Context` が正しく下層へ伝播されているか？
+            - エラーメッセージは適切か（`fmt.Errorf("...: %w", err)` を使って文脈を追加しているか）？
+            - ID 生成（UUID/ULID）やパスワードハッシュ化に安全なライブラリを想定しているか？
+
+            差分データ:
+            $(cat pr_diff.txt)
+            

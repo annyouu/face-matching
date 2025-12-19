@@ -50,6 +50,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		respondError(c, err)
 		return
 	}
+	
 	c.JSON(http.StatusCreated, output)
 }
 
