@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths:
-      - 'backend/**' # backendフォルダ内に変更があった時だけ起動
+      - 'backend/**'
 
 jobs:
   review:
@@ -22,10 +22,8 @@ jobs:
       - name: Get PR Diff
         id: diff
         run: |
-          # backendフォルダ内の差分だけを抽出してファイルに保存
+          # backendフォルダ内の差分を取得
           git diff origin/${{ github.base_ref }}...HEAD -- 'backend/' > pr_diff.txt
-          
-          # 差分があるかチェック
           if [ -s pr_diff.txt ]; then
             echo "has_diff=true" >> $GITHUB_OUTPUT
           else
@@ -34,38 +32,40 @@ jobs:
 
       - name: Gemini AI Review
         if: steps.diff.outputs.has_diff == 'true'
-        uses: google-gemini/gemini-github-action@v1
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          model: "gemini-2.0-flash"
-          # どこにコメントするか
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt: |
-            あなたは世界最高峰の Go エンジニア兼セキュリティ監査官です。
-            開発中のマッチングアプリ「Destiny Face」の backend コードをレビューしてください。
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # 差分ファイルを読み込み、JSONで送れるようにエスケープ処理をする
+          # Pythonを使って安全にJSON文字列を作成します
+          python3 -c "
+          import os, json, requests
 
-            ## レビューの基本方針
-            1. **不変性と安全性**: SQLインジェクション、機密情報のログ出力、不適切なポインタ操作がないか。
-            2. **クリーンアーキテクチャ**: 例：Repository パターンが守られ、ビジネスロジックが DB の詳細（sql.DB など）に依存していないか。
-            3. **Go の作法**: `if err != nil` の適切な処理、`errors.Is/As` によるエラーラッピング、Context の伝播、適切な命名。
-            4. **パフォーマンス**: 不要なメモリ割り当て、N+1 クエリ、DB 接続のリーク（rows.Close忘れ等）。
+          diff = open('pr_diff.txt').read()
+          api_key = os.getenv('GEMINI_API_KEY')
+          pr_number = os.getenv('PR_NUMBER')
+          repo = os.getenv('GITHUB_REPOSITORY')
+          github_token = os.getenv('GITHUB_TOKEN')
 
-            ## 出力フォーマット
-            各指摘事項は以下の形式で書いてください。
-            ### 🚩 [重要度: 高/中/低] 指摘のタイトル
-            - **問題点**: なぜこのコードが良くないのか
-            - **改善案**: どう書き換えるべきか
-            - **修正例**:
-              ```go
-              // 改善後のコードをここに記載
-              ```
+          prompt = f'''あなたは世界最高峰の Go エンジニアです。
+          マッチングアプリ「Destiny Face」の backend コードをレビューし、
+          改善点を日本語で具体的に（Before/Afterのコード付きで）指摘してください。
+          
+          重点：リポジトリパターンの遵守、DIP、Goの命名規則。
 
-            ## 重点チェックリスト（これを必ず確認してください）
-            - 関数は「インターフェースを受け取り、構造体を返す」原則に従っているか？
-            - タイムアウト制御のために `context.Context` が正しく下層へ伝播されているか？
-            - エラーメッセージは適切か（`fmt.Errorf("...: %w", err)` を使って文脈を追加しているか）？
-            - ID 生成（UUID/ULID）やパスワードハッシュ化に安全なライブラリを想定しているか？
+          差分：
+          {diff}'''
 
-            差分データ:
-            $(cat pr_diff.txt)
-            
+          # Gemini APIへリクエスト
+          url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}'
+          payload = {'contents': [{'parts': [{'text': prompt}]}]}
+          res = requests.post(url, json=payload)
+          review_text = res.json()['candidates'][0]['content']['parts'][0]['text']
+
+          # GitHub PRにコメントを投稿
+          comment_url = f'https://api.github.com/repos/{repo}/issues/{pr_number}/comments'
+          headers = {'Authorization': f'token {github_token}', 'Content-Type': 'application/json'}
+          comment_payload = {'body': f'### 🤖 Gemini シニアエンジニアのレビュー\n\n{review_text}'}
+          requests.post(comment_url, json=comment_payload, headers=headers)
+          "
