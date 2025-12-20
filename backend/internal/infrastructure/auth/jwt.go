@@ -38,17 +38,19 @@ func (s *jwtService) GenerateToken(userID string) (string, error) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	return token.SignedString(s.secretKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.secretKey))
 }
 
 func (s *jwtService) ValidateToken(tokenString string) (string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &customClaims{}, func(*jwt.Token) (interface{}, error) {
-		return s.secretKey, nil
+		return []byte(s.secretKey), nil
 	})
+
 	if err != nil || !token.Valid {
 		return "", errors.New("invalid token")
 	}
+	
 	claims, ok := token.Claims.(*customClaims)
 	if !ok {
 		return "", errors.New("invalid claims")
