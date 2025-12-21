@@ -30,27 +30,35 @@ type customClaims struct {
 }
 
 func (s *jwtService) GenerateToken(userID string) (string, error) {
+	// claims(お荷物):ペイロードを作成
 	claims := &customClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
 			IssuedAt: jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
 		},
 	}
 
+	// ヘッダー
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// 署名部分
 	return token.SignedString([]byte(s.secretKey))
 }
 
 func (s *jwtService) ValidateToken(tokenString string) (string, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &customClaims{}, func(*jwt.Token) (interface{}, error) {
-		return []byte(s.secretKey), nil
-	})
+	// 検証と解析をする
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&customClaims{},
+		func(t *jwt.Token) (interface{}, error) {
+			return []byte(s.secretKey), nil
+		},
+	)
 
 	if err != nil || !token.Valid {
 		return "", errors.New("invalid token")
 	}
-	
+
 	claims, ok := token.Claims.(*customClaims)
 	if !ok {
 		return "", errors.New("invalid claims")
