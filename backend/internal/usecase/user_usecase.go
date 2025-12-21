@@ -122,8 +122,6 @@ func (u *UserUseCase) Login(ctx context.Context, input *dto.UserLoginInput) (*dt
 	}
 
 	// 認証成功した場合：JWTのトークンを発行する
-	// ここでJWTで生成するが、今は固定値を返す
-	// token := "generated"
 	token, err := u.jwtService.GenerateToken(user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("トークンの生成に失敗しました: %w", err)
