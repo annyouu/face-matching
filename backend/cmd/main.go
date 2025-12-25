@@ -7,6 +7,8 @@ import (
 	"destinyface/internal/infrastructure/persistence"
 	"destinyface/internal/infrastructure/redis"
 	"destinyface/internal/presentation/controller"
+	"destinyface/internal/presentation/middleware"
+
 	// "destinyface/internal/presentation/middleware"
 	"destinyface/internal/usecase"
 
@@ -14,7 +16,6 @@ import (
 	"github.com/joho/godotenv"
 
 	goredis "github.com/redis/go-redis/v9"
-
 )
 
 func main() {
@@ -67,6 +68,9 @@ func main() {
 	// B. 認証必須ルート (ミドルウェアを適用)
 	userGroup := r.Group("/users")
 	// userGroup.Use(middleware.UserAuthentication(jwtService))
+
+	// jwtServiceではなく、作成したsessionRepoを渡すように変更する
+	userGroup.Use(middleware.UserAuthentication(sessionRepo))
 	{
 		userGroup.GET("/me", userHandler.GetProfile)
 		userGroup.PATCH("/me", userHandler.UpdateProfile)
