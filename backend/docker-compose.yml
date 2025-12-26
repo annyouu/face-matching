@@ -38,7 +38,7 @@ services:
       timeout: 5s
       retries: 5
 
-# Redisサービス (認証データ保存用)
+# Redisサービス (認証データ保存用) redisがサービス名
   redis:
     image: redis:alpine
     ports:
