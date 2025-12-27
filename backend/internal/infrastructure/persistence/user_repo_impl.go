@@ -133,7 +133,7 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 	// Updateクエリを定義する
 	query := `
 	UPDATE users
-	SET email = $2, password_hash = $3, name = $4, updated_at = $5
+	SET email = $2, name = $3, updated_at = $4
 	WHERE id = $1
 	`
 
@@ -146,7 +146,6 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 		query,
 		user.ID,
 		user.Email,
-		user.PasswordHash,
 		user.Name,
 		user.UpdatedAt,
 	)
