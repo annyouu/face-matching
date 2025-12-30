@@ -1,0 +1,15 @@
+.env
+.env.*
+
+# データベースの実データ
+postgres_data/
+
+# Goのバイナリ
+main
+backend/main
+
+# 環境設定ファイル
+.env
+
+# OSのキャッシュ
+.DS_Store
