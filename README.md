@@ -93,8 +93,8 @@ PY -->|顔検出 API 呼び出し| GCP
 ```
 
 # 3. ディレクトリ構成
-
-```backend
+backend
+```
 go-backend/
 ├── cmd/
 │   └── api/
@@ -139,7 +139,8 @@ go-backend/
 └── go.sum
 ```
 
-```frontend
+frontend
+```
 src/
 ├── app/                        # 1. ルーティング (Next.js App Router)
 │   ├── layout.tsx              # 全体共通（フォント、ヘッダー、フッター）
