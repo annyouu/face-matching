@@ -1,13 +1,22 @@
 version: '3.8'
 
 services:
+# フロントエンド
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
 # Goアプリケーションサービス
   backend:
-    build: .
+    build: ./backend
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
+      - ./backend:/app
     environment:
       - DB_HOST=db          
       - DB_PORT=5432
