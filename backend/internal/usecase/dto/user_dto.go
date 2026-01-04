@@ -6,7 +6,6 @@ import "time"
 
 // 新規登録用、そのままのパスワードを受け取る
 type UserRegisterInput struct {
-	Name     string `json:"name" validate:"required"`
     Email    string `json:"email" validate:"required,email"` 
     Password string `json:"password" validate:"required,min=8"`
 }
