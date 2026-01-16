@@ -71,7 +71,7 @@ erDiagram
 | password_hash | TEXT         | NOT NULL         | パスワードのハッシュ値     |
 | name          | VARCHAR(50)  | NOT NULL         | アプリ内で表示されるユーザー名 |
 | profile_image_url | TEXT     | なし         | 表示用写真のURLパス |
-| status | VARCHAR(50)     | なし         | ユーザーの進行状況 |
+| status | VARCHAR(50)     | NOT NULL         | ユーザーの進行状況 |
 | created_at    | TIMESTAMP    | NOT NULL         | 登録日時            |
 | updateded_at    | TIMESTAMP    | NOT NULL         | 更新日時            |
 
