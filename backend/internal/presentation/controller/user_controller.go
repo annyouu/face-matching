@@ -61,6 +61,58 @@ func (h *UserHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, output)
 }
 
+// PATCH /users/setup/name
+func (h *UserHandler) SetupName(c *gin.Context) {
+	userID := c.GetString(contextkey.UserID)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	var input dto.UserSetupNameInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+        return
+    }
+
+	// UseCaseの呼び出し
+	output, err := h.userUseCase.SetupName(c.Request.Context(), userID, &input)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, output)
+}
+
+// PATCH /users/setup/image
+func (h *UserHandler) SetupImage(c *gin.Context) {
+	userID := c.GetString(contextkey.UserID)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	var input dto.UserSetupImageInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+        return
+    }
+
+	// UseCaseの呼び出し
+	output, err := h.userUseCase.SetupImage(c.Request.Context(), userID, &input)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, output)
+}
+
 // POST
 func (h *UserHandler) Login(c *gin.Context) {
 	var input dto.UserLoginInput
