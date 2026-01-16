@@ -27,9 +27,13 @@ func NewUserRepository(db *sql.DB) repository.UserRepositoryInterface {
 func (r *usersRepositoryImpl) Create(ctx context.Context, user *entity.User) error {
 	// INSERTクエリ
 	query := `
-	INSERT INTO users (id, email, password_hash, name, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`
+    INSERT INTO users (id, email, password_hash, name, profile_image_url, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `
+
+	if user.Status == "" {
+		user.Status = "PENDING_NAME"
+	}
 
 	if user.CreatedAt.IsZero() {
         user.CreatedAt = time.Now()
@@ -63,10 +67,11 @@ func (r *usersRepositoryImpl) FindByID(ctx context.Context, id string) (*entity.
 
 	// クエリ実行
 	query := `
-	SELECT id, email, password_hash, name, created_at, updated_at
-	FROM users
-	WHERE id = $1
-	`
+    SELECT id, email, password_hash, name, profile_image_url, status, created_at, updated_at
+    FROM users
+    WHERE id = $1
+    `
+
 	// QueryRowContextでクエリを実行し、行を取得
 	row := r.db.QueryRowContext(ctx, query, id)
 
@@ -76,6 +81,8 @@ func (r *usersRepositoryImpl) FindByID(ctx context.Context, id string) (*entity.
 		&user.Email,
 		&user.PasswordHash,
 		&user.Name,
+		&user.ProfileImageURL,
+		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -98,7 +105,7 @@ func (r *usersRepositoryImpl) FindByEmail(ctx context.Context, email string) (*e
 
 	// クエリを定義
 	query := `
-    SELECT id, email, password_hash, name, created_at, updated_at
+    SELECT id, email, password_hash, name, profile_image_url, status, created_at, updated_at
     FROM users
     WHERE email = $1
     `
@@ -112,6 +119,8 @@ func (r *usersRepositoryImpl) FindByEmail(ctx context.Context, email string) (*e
 		&user.Email,
 		&user.PasswordHash,
 		&user.Name,
+		&user.ProfileImageURL,
+		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -132,10 +141,10 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 
 	// Updateクエリを定義する
 	query := `
-	UPDATE users
-	SET email = $2, name = $3, updated_at = $4
-	WHERE id = $1
-	`
+    UPDATE users
+    SET email = $2, name = $3, profile_image_url = $4, status = $5, updated_at = $6
+    WHERE id = $1
+    `
 
 	// user.UpdatedAtを現在の時刻に設定する
 	user.UpdatedAt = time.Now()
@@ -147,6 +156,8 @@ func (r *usersRepositoryImpl) Update(ctx context.Context, user *entity.User) err
 		user.ID,
 		user.Email,
 		user.Name,
+		user.ProfileImageURL,
+		user.Status,
 		user.UpdatedAt,
 	)
 
