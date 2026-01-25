@@ -12,7 +12,17 @@ export interface UserResponse {
     status: UserStatus;
     token?: string;
     created_at?: string;
-}
+};
+
+export interface UserRegisterInput {
+    email: string;
+    password: string;
+};
+
+export interface UserLoginInput {
+    email: string;
+    password: string;
+};
 
 /**
  * ログイン成功時のレスポンス
@@ -22,4 +32,4 @@ export interface UserResponse {
 export interface AuthTokenOutput {
     token: string;
     status: UserStatus;
-}
+};
