@@ -2,12 +2,23 @@
 
 import { useState } from "react";
 import { Input } from "@/components/Input";
+import { useAuth } from "../hooks";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const isEnabled = email !== "" && password !== "";
+  const { login, isLoading } = useAuth();
+
+  const isEnabled = email !== "" && password !== "" && !isLoading;
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await login({
+      email,
+      password,
+    });
+  };
 
   return (
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
@@ -18,13 +29,14 @@ export const LoginForm = () => {
         </p>
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <Input
           label="メールアドレス"
           type="email"
           placeholder="example@mail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={isLoading}
         />
 
         <Input
@@ -33,6 +45,7 @@ export const LoginForm = () => {
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading}
         />
 
         <button
@@ -45,7 +58,7 @@ export const LoginForm = () => {
               : "bg-gray-300 text-gray-500 cursor-not-allowed"}
           `}
         >
-          ログイン
+          {isLoading ? "ログイン中..." : "ログイン"}
         </button>
       </form>
     </div>
