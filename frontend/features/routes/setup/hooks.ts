@@ -1,35 +1,39 @@
+// APIを叩いた後の画面遷移ロジックを書く役割
 import { useRouter } from "next/navigation";
 import { setupEndpoints } from "./endpoint";
+import { UserStatus } from "@/type/user";
 
 export const useSetup = () => {
     const router = useRouter();
 
-    const handleNameSubmit = async (name: string) => {
-        try {
-            const res = await setupEndpoints.updateName(name);
-            if (res.status == "PENDING_IMAGE") {
-                // ページ遷移
+    const navigateByStatus = (status: UserStatus) => {
+        switch (status) {
+            case "ACTIVE":
+                router.push("/home");
+                break;
+            case "PENDING_IMAGE":
                 router.push("/setup/image");
-            };
-        } catch (error) {
-            alert("名前の設定に失敗しました");
+                break;
+            case "PENDING_NAME":
+                router.push("/setup/name");
+                break;
+
         }
     };
 
-    const handleImageSubmit = async (imageUrl: string) => {
-        try {
-            const res = await setupEndpoints.updateImage(imageUrl);
-            if (res.status == "ACTIVE") {
-                // ホームへ遷移
-                router.push("/home");
-            }
-        } catch (error) {
-            alert("画像の設定に失敗しました");
-        }
+    const submitName = async (name: string) => {
+        const res = await setupEndpoints.updateName(name);
+        navigateByStatus(res.status);
+    };
+
+    const submitImage = async (url: string) => {
+        const res = await setupEndpoints.updateImage(url);
+        navigateByStatus(res.status);
     };
 
     return {
-        handleNameSubmit,
-        handleImageSubmit
+        submitName,
+        submitImage,
+        navigateByStatus,
     };
 };
