@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"destinyface/internal/infrastructure/persistence"
 	"destinyface/internal/infrastructure/redis"
@@ -12,6 +13,7 @@ import (
 	// "destinyface/internal/presentation/middleware"
 	"destinyface/internal/usecase"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -34,7 +36,7 @@ func main() {
 
 	// Redisクライアントの初期化を追加
 	rdb := goredis.NewClient(&goredis.Options{
-        Addr:     "redis: 6379", 
+        Addr:     "redis:6379", 
         Password: "",
         DB: 0,
     })
@@ -48,6 +50,20 @@ func main() {
 
 	// 5. サーバー設定 (Gin)
 	r := gin.Default()
+
+	// CORS設定
+	r.Use(cors.New(cors.Config{
+		// フロントエンドのURLを許可
+        AllowOrigins: []string{"http://localhost:3000"},
+        // 許可するHTTPメソッド
+        AllowMethods: []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+        // 許可するヘッダー
+        AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+        // Cookieなどの認証情報を許可
+        AllowCredentials: true,
+        // OPTIONSリクエストの結果をキャッシュする時間
+        MaxAge: 12 * time.Hour,
+	}))
 
 	// --- ルーティング ---
 	
