@@ -7,6 +7,11 @@ export const setupEndpoints = {
     apiClient.patch<UserResponse>("/users/setup/name", { name }),
 
   // 画像設定
-  updateImage: (imageUrl: string) =>
-    apiClient.patch<UserResponse>("/users/setup/image", { profile_image_url: imageUrl }),
+  updateImage: (formData: FormData) =>
+    apiClient.patch<UserResponse>("/users/setup/image", formData, {
+      headers: {
+        // ファイル送信にはこのヘッダーが必要
+        "Content-Type": "multipart/form-data", 
+      },
+    }),
 };
