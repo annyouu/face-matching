@@ -245,3 +245,4 @@ Frontedは結果を表示し、ユーザーは気になった相手に1日3件�
 - update: 機能修正(機能削除も含める)
 - update_file: go.sum,go.modのファイル変更
 - remove: ファイルの削除
+- refactor: コード改善(リファクタ)
