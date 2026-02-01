@@ -29,7 +29,7 @@ func (h *ProfileHandler) SetupImage(c *gin.Context) {
 	}
 
 	// マルチパートフォームから画像ファイルを取得
-	fileHeader, err := c.FormFile("image")
+	fileHeader, err := c.FormFile("face_image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "画像ファイルが必要です",
