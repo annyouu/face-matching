@@ -34,7 +34,7 @@ func (u *profileUseCase) SetupProfileImage(ctx context.Context, userID string, f
 		return nil, err
 	}
 
-	// S3へ保存する
+	// ローカルストレージへ保存する
 	uploadPath := user.GenerateProfilePath()
 	imageURL, err := u.fileRepo.Upload(ctx, file, uploadPath)
 	if err != nil {
