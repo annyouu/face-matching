@@ -7,6 +7,7 @@ import (
 
 	"destinyface/internal/infrastructure/persistence"
 	"destinyface/internal/infrastructure/redis"
+	"destinyface/internal/infrastructure/storage"
 	"destinyface/internal/presentation/controller"
 	"destinyface/internal/presentation/middleware"
 
@@ -48,6 +49,10 @@ func main() {
 	userUseCase := usecase.NewUserUseCase(userRepo, sessionRepo)
 	userHandler := controller.NewUserHandler(userUseCase)
 
+	profileRepo := storage.NewLocalStorage("./uploads")
+	profileUseCase := usecase.NewProfileUseCase(userRepo, profileRepo)
+	profileHandler := controller.NewProfileHandler(profileUseCase)
+
 	// 5. サーバー設定 (Gin)
 	r := gin.Default()
 
@@ -85,7 +90,7 @@ func main() {
 
 		// 追加
 		userGroup.PATCH("/setup/name", userHandler.SetupName)
-		userGroup.PATCH("/setup/image", userHandler.SetupImage)
+		userGroup.POST("/setup/image", profileHandler.SetupImage)
 	}
 
 	// 6. 起動

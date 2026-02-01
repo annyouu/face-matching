@@ -6,7 +6,8 @@ import (
 )
 
 type FileStorageInterface interface {
-	// Uploadは画像データを保存し、S3からアクセス可能なURLを返す。
-	// fileNameは、"users/{userID}/profile.jpg"のような固定パスを想定する。
-	Upload(ctx context.Context, data io.Reader, fileName string) (string, error)
+	// データをアップロードして、アクセス用のURLを返す
+	// file: 画像のバイナリ (io.Reader)
+	// path: EntityのGenerateProfilePath()で生成したパス
+	Upload(ctx context.Context, file io.Reader, path string) (string, error) 
 }

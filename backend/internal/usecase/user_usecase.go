@@ -28,7 +28,6 @@ type UserUseCaseInterface interface {
 
 	// 確認フェーズ
 	SetupName(ctx context.Context, userID string, input *dto.UserSetupNameInput) (*dto.UserOutput, error)
-	SetupImage(ctx context.Context, userID string, input *dto.UserSetupImageInput) (*dto.UserOutput, error)
 }
 
 type UserUseCase struct {
@@ -126,33 +125,6 @@ func (u *UserUseCase) SetupName(ctx context.Context, userID string, input *dto.U
 	return &dto.UserOutput{
 		ID: user.ID,
 		Name: user.Name,
-		Status: user.Status,
-	}, nil
-}
-
-func (u *UserUseCase) SetupImage(ctx context.Context, userID string, input *dto.UserSetupImageInput) (*dto.UserOutput, error) {
-	user, err := u.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 状態チェック
-	if user.Status != "PENDING_IMAGE" {
-		return nil, fmt.Errorf("invalid status for name setup: %s", user.Status)
-	}
-
-	user.ProfileImageURL = input.ProfileImageURL
-	user.Status = "ACTIVE"
-	user.UpdatedAt = time.Now()
-
-	if err := u.userRepo.Update(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return &dto.UserOutput{
-		ID: user.ID,
-		Name: user.Name,
-		ProfileImageURL: user.ProfileImageURL,
 		Status: user.Status,
 	}, nil
 }
