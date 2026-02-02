@@ -37,54 +37,58 @@
     - 似たものがあります（類似度75%：以前撮った画像と並べて比較）
     - 持っていないようです（類似度低）」といった結果を表示。
 
+## 使用技術
+1. バックエンド / AWS
+- 言語：Go
+- 認証・セッション：Redis
+- データベース：PostgreSQL + pgvector (画像ベクトルの高速検索を実現)
+- 通信プロトコル: gRPC + Protocol Buffers (Go-Python間の高速・型安全な通信)
+- ストレージ：MinIO または AWS S3 (撮影した画像データの保存)
+
+2. 機械学習解析 (Python ML Server)
+- 言語：Python(Deep Learningライブラリが豊富なため)
+- 特徴量抽出: PyTorch + Vision Transformer (ViT) (パッケージの類似性を数値化)
+- 商品名抽出 (OCR/VLM):
+    - EasyOCR: 文字があるパッケージから名前を抜く。
+    - Moondream2 または Llama-3.2-Vision: 文字がない掃除用具などの名前を推論。
+- API：gRPC Server (Goからの解析依頼を待ち受ける)
+
+3. フロントエンド
+- フレームワーク: Next.js (TypeScript)
+- スタイリング: Tailwind CSS
+- カメラ機能: react-hook-form + カスタムフック (スムーズな撮影・アップロード体験)
+
+
 # 2. 全体図
 ```mermaid
-flowchart TD
-
-%% Frontend
-subgraph FE["Frontend (Next.js / Mobile)"]
-    UI["カメラUI / 在庫一覧 / 照合結果表示"]
-end
-
-%% Backend
-subgraph API_Layer["API Layer (Go)"]
-    AUTH["Auth Handler (ログイン/認証)"]
-    INV["Inventory Handler (CRUD)"]
-    SEARCH["Search Engine (類似度検索)"]
-    GRPC_C["gRPC Client"]
-end
-
-%% Middlewares & DB
-subgraph Storage["Storage Layer"]
-    REDIS[("Redis")]
-    DB[("PostgreSQL + pgvector (Meta & Vectors)")]
-    MINIO[("Object Storage / S3 (Images)")]
-end
-
-%% ML Server
-subgraph PY_Layer["ML Layer (Python)"]
-    PY_SERVER["gRPC Server"]
-    FEAT["Feature Extractor (ViT)"]
-    NAMING["Product Naming (OCR / VLM)"]
-end
-
-%% フロー定義
-UI <-->|1. ログイン/セッション確認| AUTH
-AUTH <--> REDIS
-
-UI --->|2. 商品撮影アップロード| INV
-INV --->|3. 画像解析依頼| GRPC_C
-GRPC_C <--- gRPC ---> PY_SERVER
-
-
-FEAT -->|ベクトルデータ| GRPC_C
-NAMING -->|推論された商品名| GRPC_C
-
-INV --->|4. メタデータ & ベクトル保存| DB
-INV --->|5. 元画像保存| MINIO
-
-SEARCH --->|6. ベクトル近傍探索| DB
-SEARCH ---> UI
+flowchart TB
+ subgraph FE["フロントエンド (Next.js)"]
+        USER["ユーザー操作（撮影/検索/管理）"]
+        FE_API["APIリクエスト送信"]
+  end
+ subgraph BE["バックエンド (Go/DB)"]
+        AUTH["認証処理 (Go)"]
+        CRUD["在庫CRUDAPI (Go)"]
+        DB["DB/画像ストレージ"]
+        GRPC_CLIENT["gRPCクライアント（Go）"]
+  end
+ subgraph PY["AIサーバ (Python ML)"]
+        PY_GRPC["gRPCサーバ（Python）"]
+        ML["AI解析・特徴量抽出 (Python)"]
+  end
+    PY_GRPC --> ML
+    ML --> PY_GRPC
+    USER --> FE_API
+    FE_API --> AUTH & CRUD & GRPC_CLIENT
+    CRUD --> DB
+    DB --> CRUD
+    GRPC_CLIENT --> CRUD
+    GRPC_CLIENT -- gRPC --> PY_GRPC
+    PY_GRPC -- gRPCレスポンス --> GRPC_CLIENT
+    AUTH -- 認証結果/セッション --> FE_API
+    CRUD -- 在庫一覧/編集結果 --> FE_API
+    GRPC_CLIENT -- AI結果 --> FE_API
+    FE_API -- フィードバック表示 --> USER
 ```
 
 # 3. ディレクトリ構成
@@ -203,7 +207,9 @@ Go APIは以下を担当します。
     - 類似度指標 (相対スコア)
 Frontedは結果を表示し、ユーザーは気になった相手に1日3件までメッセージを送ることができる。
 
-# 4. シーケンス図
+# 4-1. 機能要件
+
+# 4-2. 非機能要件
 
 # 5. アーキテクチャ詳細 (クリーンアーキテクチャ & DDD の採用)
 
