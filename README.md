@@ -76,10 +76,6 @@ UI --->|2. 商品撮影アップロード| INV
 INV --->|3. 画像解析依頼| GRPC_C
 GRPC_C <--- gRPC ---> PY_SERVER
 
-subgraph PY_Process["Python解析プロセス"]
-    PY_SERVER --> FEAT
-    PY_SERVER --> NAMING
-end
 
 FEAT -->|ベクトルデータ| GRPC_C
 NAMING -->|推論された商品名| GRPC_C
