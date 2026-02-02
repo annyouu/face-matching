@@ -1,23 +1,14 @@
-# Destiny Face 顔マッチングサービス — 仕様書
-顔を検索可能なオブジェクトとして扱う、顔類似検索プラットフォーム
-
+# Daburi Zero — 仕様書
+「これ、家にあったっけ？」「家にあるのにまた同じものを買ってしまった。。。」を画像検索で解決する、うっかり重複買い防止プラットフォーム
 
 ## 概要
-従来のマッチングサービスは、年齢・年収・身長といった数値化された条件や、
-スワイプ型の直感的すぎる選択によって、ユーザーに判断疲れや心理的負担を与えてきました。
-Destiny Face は、
-「この顔が好き」「こういう雰囲気の人を探している」という
-言語化しづらい主観的な好みを起点に、人を探せる新しいアプローチを取ります。
-本サービスでは、顔画像そのものを 検索可能なオブジェクト として扱い、
-アップロードされた顔画像に対して、似た顔のユーザーを類似度順に提示します。
-恋愛を前提とせず、
-「顔の好みから人を探す」ことを自然に行える体験を提供します。
+「Daburi Zero」は、洗剤、調味料、掃除用具など、日用品の「ダブリ買い」をゼロにするための管理アプリです。本サービスでは、「画像（パッケージデザイン）そのもの」をベクトル化して検索することで、在庫状況を照合する体験を提供します。
 
 # 1.要件サマリ
-- 顔画像を入力として、人を検索できること
-- 顔の類似度に基づいて結果を並べ替えられること
-- 気になった相手に、最小限のコミュニケーションが取れること
-- 数値スペックや過剰なプロフィール情報に依存しないこと
+- 商品を撮影するだけで在庫登録・検索ができること
+- 画像の類似度（特徴量ベクトル）に基づいて、既存在庫との一致を判定すること
+- 在庫の有無を「％（類似度）」と「画像比較」で直感的にユーザーへ伝えること
+- 外出先（オフラインに近い環境）でも高速に検索結果を返せること
 
 ## 機能 (MVP)
 1. 認証機能
@@ -48,21 +39,20 @@ Destiny Face は、
 flowchart LR
 
 %% Frontend
-subgraph FE["Frontend (Next.js)"]
-    LOGIN["ログイン / 新規登録 UI"]
-    UI["ユーザー UI 画像アップロード / 類似ユーザー一覧"]
+subgraph FE["Frontend (Next.js / Mobile)"]
+    UI["カメラUI / 在庫一覧 / 照合結果表示"]
 end
 
 %% Backend
 subgraph API_Layer["API Layer (Go)"]
-    AUTH["Auth Handler (JWT/OAuth)"]
-    UPLOAD["Upload Handler"]
-    MATCH["Matcher Service (類似度計算・検索)"]
+    AUTH["Auth Handler"]
+    UPLOAD["Inventory Handler (登録・検索窓口)"]
+    VEC_QUERY["Vector Search Engine"]
 end
 
 %% Embedding Server
-subgraph PY_Layer["Embedding Layer (Python)"]
-    PY["Face Embedding Server (Face Detection/Alignment/Embedding)"]
+subgraph PY_Layer["ML Layer (Python)"]
+    PY["Feature Extractor (ResNet/ViT) / Image Preprocessing"]
 end
 
 %% Database
@@ -70,27 +60,13 @@ subgraph DB_Layer["Database Layer"]
     DB[(PostgreSQL + pgvector)]
 end
 
-%% External
-subgraph EXT["External Services"]
-    GCP["Google Cloud Vision API"]
-end
-
-%% 認証フロー
-LOGIN -->|認証リクエスト| AUTH
-AUTH -->|JWT発行| LOGIN
-
-%% 画像アップロードフロー
-UI -->|画像アップロード + JWT| UPLOAD
-UPLOAD -->|gRPCで画像パス送信| PY
-PY -->|gRPCでEmbedding生成| UPLOAD
-
-UPLOAD -->|Embeddingを渡す| MATCH
-MATCH -->|pgvector検索| DB
-MATCH -->|類似ユーザー結果| UPLOAD
-UPLOAD -->|レスポンス返却| UI
-
-%% 外部 API 呼び出し
-PY -->|顔検出 API 呼び出し| GCP
+%% フロー
+UI -->|商品画像アップロード| UPLOAD
+UPLOAD -->|gRPC| PY
+PY -->|特徴量ベクトル返却| UPLOAD
+UPLOAD -->|ベクトル検索 / 保存| DB
+DB -->|検索結果返却| UPLOAD
+UPLOAD -->|判定結果（類似度＋画像）| UI
 ```
 
 # 3. ディレクトリ構成
