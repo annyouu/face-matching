@@ -39,29 +39,62 @@
 
 # 2. 全体図
 ```mermaid
-flowchart LR
+flowchart TD
 
-%% フロント
-UI["スマホUI (Next.js)"]
-
-%% Goバックエンド
-subgraph Go["Go API (司令塔)"]
-    direction TB
-    Auth["認証 (Redis)"]
-    Logic["登録・検索ロジック"]
+%% Frontend: ユーザー接点
+subgraph FE["Frontend (Next.js Mobile)"]
+    UI["UI: カメラ撮影 / 在庫リスト / 照合結果"]
+    SDK["API Client (fetch/axios)"]
 end
 
-%% 解析（Python）
-ML["AI解析 (Python) \n [特徴量 & 商品名抽出]"]
+%% Backend: 司令塔 (Go)
+subgraph Go["Backend API (Go)"]
+    direction TB
+    MW["Auth Middleware (Session Check)"]
+    
+    subgraph Services["Core Services"]
+        AUTH["Auth Service: ログイン/会員登録"]
+        INV["Inventory Service: CRUD管理"]
+        MATCH["Matching Engine: 類似度判定ロジック"]
+    end
+    
+    GRPC["gRPC Client (Python連携)"]
+end
 
-%% データベース
-DB[("DB (pgvector) \n [ベクトル & 商品情報]")]
+%% Machine Learning: 解析基盤 (Python)
+subgraph ML["ML Server (Python)"]
+    direction LR
+    PSERVE["gRPC Server"]
+    VEC["Vector Extractor (ViT/ResNet)"]
+    NAME["AI Naming (OCR/VLM)"]
+    
+    PSERVE --> VEC
+    PSERVE --> NAME
+end
 
-%% フロー
-UI <--> Auth
-UI ---> Logic
-Logic <--- gRPC ---> ML
-Logic ---> DB
+%% Storage: データ基盤
+subgraph Storage["Data & Storage"]
+    REDIS[("Redis: セッション管理 \n (Session ID -> UserID)")]
+    PG[("PostgreSQL + pgvector \n (商品データ & ベクトル)")]
+    IMG[("Object Storage (S3/MinIO) \n (商品画像バイナリ)")]
+end
+
+%% フロー定義
+UI <--> SDK
+SDK <--> MW
+MW <--> REDIS
+
+%% 登録・検索フロー
+SDK ---> AUTH
+SDK ---> INV
+SDK ---> MATCH
+
+INV <--- gRPC ---> PSERVE
+MATCH <--- gRPC ---> PSERVE
+
+INV ---> PG
+INV ---> IMG
+MATCH ---> PG
 ```
 
 # 3. ディレクトリ構成
