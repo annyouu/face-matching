@@ -11,32 +11,35 @@
 - 外出先（オフラインに近い環境）でも高速に検索結果を返せること
 
 ## 機能 (MVP)
-1. 認証機能
-    - ユーザー登録 / ログイン
-    - JWTを使用
+1. 認証・セッション管理 (Redis)
+    - ID/パスワードによる認証。
+    - ログイン成功後、セッションIDを発行しRedisに保存する。
+    - 以降のリクエストはRedis上のセッション情報で認可を行う。
 
-2. 顔登録・Embedding生成
-    - ユーザーが自身の顔画像をアップロード
-    - Python 製の ML サービスで顔特徴量（Embedding）を生成
-    - Embeddingをデータベースに保存する
+2. 自宅備品マネジメント (CRUD)
+    - 商品登録 (Create)：
+        - スマホで商品を撮影 → 商品名をそのままAIが登録する。商品名入力すらも無くしたい。
+        - Pythonでベクトル化し、メタデータと共に保存。
+    - 在庫一覧・詳細 (Read)：
+        - 登録した商品をリスト表示。
+        - 商品からどういう要素をカラムとして持たせるか
+    - 在庫編集 (Update)：
+        - ストックが切れたのでなしにする。商品名を変えるなどの操作ができる。
+    - 在庫削除 (Delete)：
+        - 使わなくなったアイテムの削除。
 
-3. 顔類似検索 (中核機能)
-    - 検索したい顔画像（芸能人・人物写真など）をアップロード
-    - 入力画像から Embedding を生成
-    - 登録ユーザーの顔Embeddingと類似度を計算
-    - 類似度順にユーザー一覧を表示（Top N）
-
-4. 検索結果表示
-    - 顔サムネイル
-    - 類似度に基づく並び順
-    - 最低限のプロフィール情報 (ニックネーム等)
-
-5. メッセージ送信
-    - 気になった相手に1日最大3人までメッセージを送信可能
+3. 店頭照合機能
+- リアルタイム検索：
+    - 店頭で「これ持ってたっけ？」と思った時にカメラで撮影。
+    - 「今撮った写真」 と 「DB内の全在庫ベクトル」で高速類似度検索。
+- 判定フィードバック：
+    - 持っています（類似度95%：画像表示）
+    - 似たものがあります（類似度75%：以前撮った画像と並べて比較）
+    - 持っていないようです（類似度低）」といった結果を表示。
 
 # 2. 全体図
 ```mermaid
-flowchart LR
+flowchart TD
 
 %% Frontend
 subgraph FE["Frontend (Next.js / Mobile)"]
@@ -45,28 +48,47 @@ end
 
 %% Backend
 subgraph API_Layer["API Layer (Go)"]
-    AUTH["Auth Handler"]
-    UPLOAD["Inventory Handler (登録・検索窓口)"]
-    VEC_QUERY["Vector Search Engine"]
+    AUTH["Auth Handler (ログイン/認証)"]
+    INV["Inventory Handler (CRUD)"]
+    SEARCH["Search Engine (類似度検索)"]
+    GRPC_C["gRPC Client"]
 end
 
-%% Embedding Server
+%% Middlewares & DB
+subgraph Storage["Storage Layer"]
+    REDIS[("Redis (Session / Cache)")]
+    DB[("PostgreSQL + pgvector (Meta & Vectors)")]
+    MINIO[("Object Storage (Images)")]
+end
+
+%% ML Server
 subgraph PY_Layer["ML Layer (Python)"]
-    PY["Feature Extractor (ResNet/ViT) / Image Preprocessing"]
+    PY_SERVER["gRPC Server"]
+    FEAT["Feature Extractor (ViT)"]
+    NAMING["Product Naming (OCR / VLM)"]
 end
 
-%% Database
-subgraph DB_Layer["Database Layer"]
-    DB[(PostgreSQL + pgvector)]
+%% フロー定義
+UI <-->|1. ログイン/セッション確認| AUTH
+AUTH <--> REDIS
+
+UI --->|2. 商品撮影アップロード| INV
+INV --->|3. 画像解析依頼| GRPC_C
+GRPC_C <--- gRPC ---> PY_SERVER
+
+subgraph PY_Process["Python解析プロセス"]
+    PY_SERVER --> FEAT
+    PY_SERVER --> NAMING
 end
 
-%% フロー
-UI -->|商品画像アップロード| UPLOAD
-UPLOAD -->|gRPC| PY
-PY -->|特徴量ベクトル返却| UPLOAD
-UPLOAD -->|ベクトル検索 / 保存| DB
-DB -->|検索結果返却| UPLOAD
-UPLOAD -->|判定結果（類似度＋画像）| UI
+FEAT -->|ベクトルデータ| GRPC_C
+NAMING -->|推論された商品名| GRPC_C
+
+INV --->|4. メタデータ & ベクトル保存| DB
+INV --->|5. 元画像保存| MINIO
+
+SEARCH --->|6. ベクトル近傍探索| DB
+SEARCH ---> UI
 ```
 
 # 3. ディレクトリ構成
