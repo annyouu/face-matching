@@ -153,34 +153,32 @@ go-backend/
 
 frontend
 ```
-src/
-├── app/                        # 1. ルーティング (Next.js App Router)
-│   ├── layout.tsx              # 全体共通（フォント、ヘッダー、フッター）
-│   ├── page.tsx                # ランディングページ (Desktop-2)
-│   ├── login/
-│   │   └── page.tsx            # ログイン画面 (Desktop-1)
-│   ├── signup/
-│   │   └── page.tsx            # 新規登録画面
-│   └── onboarding/
-│       └── page.tsx            # 登録後フロー (名前入力、顔登録など)
-├── components/                 # 2. ロジックを持たない共通UI部品
-│   ├── Button.tsx              # Tailwindで装飾したボタン
-│   ├── Input.tsx               # 入力フォーム部品
-│   └── Card.tsx                # 白い枠線などの共通コンテナ
-├── features/                   # 3. 画面（機能）ごとのロジックと部品
-│   ├── common/                 # 複数機能で使うロジック入り部品
-│   └── routes/                 # 特定ページ専用のコンポーネント
-│       ├── auth/               # ログイン・新規登録用
-│       │   ├── components/     # LoginForm.tsx, SignupForm.tsx
-│       │   ├── hooks.ts        # ログイン処理、バリデーション
-│       │   └── endpoint.ts     # Go APIを叩く関数 (Infrastructure)
-│       └── onboarding/         # 登録後のステップ用 (FigmaのDesktop-14等)
-│           ├── components/     # NameForm.tsx, FaceUpload.tsx
-│           ├── hooks.ts        # ステップ管理、アニメーション制御
-│           └── endpoint.ts     # プロフィール保存API
-├── hooks/                      # 4. プロジェクト全体で使うReact Hooks
-├── utils/                      # 5. 純粋な関数（日付変換、エラー処理など）
-└── constants/                  # 6. 定数（APIのベースURL、文言など）
+frontend/
+├── src/
+│   ├── api/                   # services から改名（Go側の infrastructure/persistence と対になる）
+│   │   ├── axios.ts           # 共通設定（BaseURL, Headerなど）
+│   │   ├── auth.ts            # ログイン・会員登録関連
+│   │   └── inventory.ts       # 在庫照合・リスト取得関連
+│   ├── components/
+│   │   ├── common/            # 使い回す部品（Button, Input, Loading等）
+│   │   └── layout/            # 画面の枠組み（Header, BottomNav等）
+│   ├── features/              # 【心臓部】機能ごとの「部品 + ロジック」
+│   │   ├── auth/              # LoginForm や useAuthHook
+│   │   ├── inventory/         # InventoryList や 在庫編集ロジック
+│   │   └── camera/            # カメラ起動・画像プレビュー・照合ロジック
+│   ├── pages/                 # ルーティングの「受け皿」
+│   │   ├── Home.tsx           # あのシンプルな「これ持ってたっけ？」画面
+│   │   ├── Login.tsx
+│   │   ├── Register.tsx
+│   │   └── Inventory.tsx      # 在庫一覧画面
+│   ├── routes/
+│   │   └── AppRoutes.tsx      # react-router-dom の定義
+│   ├── hooks/                 # 共通フック（useLocalStorage, useDebounce等）
+│   ├── context/               # AuthContext（ログイン状態のグローバル管理）
+│   ├── utils/                 # ヘルパー関数（日付変換、画像圧縮等）
+│   ├── App.tsx                # ルート
+│   └── main.tsx               # エントリーポイント
+└── .env                       # VITE_API_URLなどを定義
 ```
 
 <!-- websocketによるチャット機能をfrontendのflowchart LR追加する -->
@@ -227,10 +225,10 @@ Frontedは結果を表示し、ユーザーは気になった相手に1日3件�
 # 5. アーキテクチャ詳細 (クリーンアーキテクチャ & DDD の採用)
 
 
-# 6. フロントエンド仕様 (Next.js+TypeScript)
+# 6. フロントエンド仕様 (React+TypeScript)
 ## 主要ページ
 
-## なぜNext.jsを採用するか、Reactとの比較
+## Next.jsとReactの比較
 
 ## TypeScriptを採用する理由
 
