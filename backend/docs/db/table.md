@@ -2,7 +2,7 @@
 
 ## データベース設計 (PostgreSQL + pgvector) (ベクトル検索)
 
-アプリケーションのコアとなる6つのテーブルと、そのリレーションを示します。
+アプリケーションのコアとなる2つのテーブルと、そのリレーションを示します。
 
 ### 1. ER図 (実体関連図)
 
@@ -13,49 +13,24 @@ erDiagram
         string name
         string email
         string password_hash
+        string profile_image_url
+        string status "ユーザーの進行状況"
+        timestamp created_at
+        timestamp updated_at
     }
-    FACES {
+    ITEMS {
         uuid id PK
-        uuid user_id FK "誰の顔か"
-        vector embedding "顔特徴量"
-    }
-    LIKES {
-        uuid id PK
-        uuid sender_id FK "メッセージを送った人"
-        uuid receiver_id FK "メッセージを送られた人"
-        text message_content
-    }
-    DAILY_LIMITS {
-        uuid user_id FK, PK
-        date date PK "日付ごとの制限"
-        int count "送信済み人数"
-    }
-    CONVERSATIONS {
-        uuid id PK
-        uuid user_a_id FK
-        uuid user_b_id FK
-    }
-    MESSAGES {
-        uuid id PK
-        uuid conversation_id FK "どの会話に属するか"
-        uuid sender_id FK "送信者"
-        text content "メッセージ本文"
+        uuid user_id FK "誰の持ち物か"
+        string product_name "AIが自動命名"
+        string product_image_url "S3/MinIOのパス"
+        vector embedding "pgvector: 商品の特徴量"
+        integer status "0:なし, 1:あり"
+        timestamp created_at "新規登録日"
+        timestamp updated_at "在庫更新日"
     }
 
-    %% 1. USERS との 1対多/多対1 の関係
-    USERS ||--o{ FACES : "has"
-    USERS ||--o{ DAILY_LIMITS : "manages"
-    
-    %% 2. 多対多を実現する LIKES (中間テーブル) との関係
-    USERS ||--o{ LIKES : "sends"
-    USERS ||--o{ LIKES : "receives"
-    
-    %% 3. チャット構造
-    CONVERSATIONS ||--o{ MESSAGES : "contains"
-    
-    %% 4. CONVERSATIONS と USERS の関係 (会話への参加)
-    USERS ||--o{ CONVERSATIONS : "user A"
-    USERS ||--o{ CONVERSATIONS : "user B"
+    %% リレーション
+    USERS ||--o{ ITEMS : "owns"
 ```
 
 # 2. テーブル詳細（スキーマ定義）
@@ -77,55 +52,15 @@ erDiagram
 
 ## 2-2. **Faces テーブル**
 
-ユーザーに紐づく顔特徴量（ベクトル）を管理します。
+「Daburi Zero」の本体。画像ベクトルと在庫状態をセットで保持する。
 
-| カラム名       | データ型        | 制約       | 説明             |
-| ---------- | ----------- | -------- | -------------- |
-| id         | UUID        | PK       | 顔データID         |
-| user_id    | UUID        | UNIQUE,FK       | 関連するユーザーID     |
-| embedding  | VECTOR(512) | NOT NULL | 512次元の顔特徴量ベクトル |
-| created_at | TIMESTAMP   | NOT NULL | 登録日時           |
-| updateded_at    | TIMESTAMP    | NOT NULL         | 更新日時            |
-
-## 2-3. **Likes テーブル（中間テーブル）**
-
-初手メッセージの送信記録、多対多の関連、重複・制限チェックに使用。
-
-| カラム名            | データ型      | 制約       | 説明                          |
-| --------------- | --------- | -------- | --------------------------- |
-| id              | UUID      | PK       | レコードID                      |
-| sender_id       | UUID      | FK       | 初手メッセージを送ったユーザーID           |
-| receiver_id     | UUID      | FK       | 初手メッセージを送られたユーザーID          |
-| message_content | TEXT      |          | 初手メッセージ本文                   |
-| created_at      | TIMESTAMP | NOT NULL | 送信日時（Daily_Limits のカウントに使用） |
-
-## 2-4. **Daily_Limits テーブル**
-
-| カラム名    | データ型    | 制約       | 説明                |
-| ------- | ------- | -------- | ----------------- |
-| user_id | UUID    | PK, FK   | 制限対象のユーザー         |
-| date    | DATE    | PK       | 対象日付 (YYYY-MM-DD) |
-| count   | INTEGER | NOT NULL | その日の初手メッセージ送信数    |
-
-## 2-5. **Conversations テーブル**
-
-チャットルームを定義し、メッセージのまとまりを管理。
-
-| カラム名       | データ型      | 制約       | 説明                   |
-| ---------- | --------- | -------- | -------------------- |
-| id         | UUID      | PK       | チャットルーム識別ID          |
-| user_a_id  | UUID      | FK       | 会話参加者A（IDが小さい方を格納推奨） |
-| user_b_id  | UUID      | FK       | 会話参加者B               |
-| created_at | TIMESTAMP | NOT NULL | 会話開始日時               |
-
-## 2-6. **Messages テーブル**
-
-会話のメッセージ（履歴）を記録。
-
-| カラム名            | データ型      | 制約       | 説明           |
-| --------------- | --------- | -------- | ------------ |
-| id              | UUID      | PK       | メッセージ個別ID    |
-| conversation_id | UUID      | FK       | 紐づくチャットルームID |
-| sender_id       | UUID      | FK       | メッセージ送信者     |
-| content         | TEXT      | NOT NULL | メッセージ本文      |
-| created_at      | TIMESTAMP | NOT NULL | 送信日時         |
+| カラム名          | データ型         | 制約               | 説明              |
+| ------------- | ------------ | ---------------- | --------------- |
+| id            | UUID         | PK               | ユーザーの主キーID      |
+| user_id            | UUID         | FK, NOT NULL       | どのユーザーの在庫か      |
+| product_name  | TEXT         | NOT NULL    | 写真からAIが判定した名前     |
+| product_image_url  | TEXT         | NOT NULL    | ストレージに保存された実物写真のパス     |
+| embedding  | VECTOR(512)  | NOT NULL    | pgvector： 類似度検索に使う512次元ベクトル  |
+| status  | INTEGET  | NOT NULL    | 0: なし, 1: あり (買い物リスト抽出に利用)  |
+| created_at  | TIMESTAMP  | NOT NULL    | この商品が初めて「記憶（登録）」された日時 |
+| updated_at  | TIMESTAMP  | NOT NULL    | 在庫状態が変わった、または再スキャンされた日時 |
