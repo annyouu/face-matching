@@ -19,7 +19,6 @@ export const RegisterForm = () => {
   };
 
   return (
-    /* w-full p-8 ... border: これが白い枠（カード）の正体です */
     <div className="w-full p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-gray-100">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
